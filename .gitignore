@@ -1,0 +1,21 @@
+# Arquivos gerados pelo .NET
+[Bb]in/
+[Oo]bj/
+
+# Configuracoes locais da IDE
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Configuracoes locais e credenciais
+/appsettings.json
+/appsettings.Development.json
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
