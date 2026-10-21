@@ -34,3 +34,7 @@ O projeto utiliza .NET 10 e PostgreSQL. Configure a conexão em `ConnectionStrin
 Os arquivos `appsettings.json` e `appsettings.Development.json` são ignorados pelo Git para manter as configurações e credenciais locais fora do repositório.
 
 Projeto em evolução: os tópicos acima representam estudos em andamento.
+
+## DTOs e contratos
+
+Os DTOs estão separados por entidade e operação. Consulte [os contratos e exemplos](docs/DTOs.md) para criação, filtros, respostas e os contratos preparados de atualização e exclusão. O valor bruto dos novos pedidos é calculado no serviço a partir dos itens. A migração de valores para decimal está preparada, sem aplicação ao banco.

@@ -1,9 +1,10 @@
 ﻿using DotNetFoundations.Database;
-using DotNetFoundations.Interfaces;
+using DotNetFoundations.Filters;
+using Microsoft.EntityFrameworkCore;
 
 namespace DotNetFoundations.Repository
 {
-    public class ModelsRepository : IRepository
+    public class ModelsRepository
     {
         private readonly DatabaseContext _db;
         public ModelsRepository(DatabaseContext db) 
@@ -17,6 +18,18 @@ namespace DotNetFoundations.Repository
             if (_db.Model.FindEntityType(typeof(T)) == null)
                 throw new InvalidOperationException(
                     $"A entidade {typeof(T).Name} não está mapeada.");
+        }
+
+        public IQueryable<T> GetQuery<T>() where T : class
+        {
+            var query = _db.Set<T>().AsQueryable();            
+            return query;
+        }
+
+        public async Task<List<T>>? GetByFilter<T>(BaseFilter filter) where T : class
+        {
+            var query = GetQuery<T>();
+            return await query.ToListAsync<T>();
         }
 
         public void Add<T>(T entity) where T : class

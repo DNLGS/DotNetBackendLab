@@ -1,4 +1,4 @@
-﻿using DotNetFoundations.Models;
+using DotNetFoundations.DTOs.Products.Requests;
 using DotNetFoundations.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,14 +16,23 @@ namespace DotNetFoundations.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddProd(
-            [FromBody] Products product)
+        public async Task<IActionResult> CreateProduct(
+            [FromBody] CreateProductRequest product)
         {
-            await _productsService.AddAsync(product);
+            await _productsService.CreateAsync(product);
 
             return Ok(new
             {
                 message = "Product added successfully"
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProductsFilter([FromQuery] QueryProductRequest filter)
+        {
+            var products = await _productsService.QueryAsync(filter);
+            return Ok(new {
+                products = products,
             });
         }
     }

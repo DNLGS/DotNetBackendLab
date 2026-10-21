@@ -17,6 +17,7 @@ namespace DotNetFoundations.Services
             _db = dbcontext ??
                 throw new ArgumentNullException(nameof(dbcontext));
         }
+        public DatabaseContext Context => _db;
 
         public async Task<bool> CheckConnection(CancellationToken ct = default)
         {

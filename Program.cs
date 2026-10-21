@@ -20,8 +20,6 @@ builder.Services.AddScoped<ClientsService>(sp => new ClientsService(sp.GetRequir
 builder.Services.AddScoped<ProductsService>(sp => new ProductsService(sp.GetRequiredService<ModelsRepository>(), sp.GetRequiredService<DatabaseService>()));
 builder.Services.AddScoped<ItemsService>(sp => new ItemsService(sp.GetRequiredService<ModelsRepository>(), sp.GetRequiredService<DatabaseService>()));
 builder.Services.AddScoped<OrderService>(sp => new OrderService(sp.GetRequiredService<ModelsRepository>(), sp.GetRequiredService<DatabaseService>()));
-builder.Services.AddScoped<DatabaseService>(sp => new DatabaseService(sp.GetRequiredService<DatabaseContext>()));
-builder.Services.AddScoped<ModelsRepository>(sp => new ModelsRepository(sp.GetRequiredService<DatabaseContext>()));
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
