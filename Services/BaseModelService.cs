@@ -167,5 +167,11 @@ namespace DotNetFoundations.Services
                 throw;
             }
         }
+
+        public virtual async Task<T?> GetByIdAsync(params object[] id)
+        {
+            ArgumentNullException.ThrowIfNull(id);
+            return await _databaseService.Context.Set<T>().FindAsync(id);
+        }
     }
 }

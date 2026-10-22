@@ -18,5 +18,5 @@ public class UpdateOrderRequest
     [Range(typeof(decimal), "0", "79228162514264337593543950335", ParseLimitsInInvariantCulture = true)]
     public decimal Increase { get; set; }
     [Required]
-    public required List<UpdateItemRequest> Items { get; set; }
+    public List<UpdateItemRequest>? Items { get; set; }
 }

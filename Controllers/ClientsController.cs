@@ -33,5 +33,45 @@ namespace DotNetFoundations.Controllers
                 clients = clients,
             });
         }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteClient([FromQuery] DeleteClientRequest request)
+        {
+            var client = await _clientsService.GetByIdAsync(request.ClientsId);
+            if (client == null)
+            {
+                return NotFound(new
+                {
+                    message = "Client not found"
+                });
+            }
+
+            await _clientsService.DeleteAsync(client);
+            return Ok(new
+            {
+                message = "Client deleted successfully"
+            });
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateClient([FromBody] UpdateClientRequest request)
+        {
+            var client = await _clientsService.GetByIdAsync(request.ClientsId);
+            if (client == null)
+            {
+                return NotFound(new
+                {
+                    message = "Client not found"
+                });
+            }
+            client.Name = request.Name ?? client.Name;
+            client.Email = request.Email ?? client.Email;
+            client.Phone = request.Phone ?? client.Phone;
+            await _clientsService.UpdateAsync(client);
+            return Ok(new
+            {
+                message = "Client updated successfully"
+            });
+        }
     }
 }

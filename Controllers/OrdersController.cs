@@ -1,4 +1,5 @@
 using DotNetFoundations.DTOs.Orders.Requests;
+using DotNetFoundations.Models;
 using DotNetFoundations.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,6 +31,47 @@ namespace DotNetFoundations.Controllers
             return Ok(new
             {
                 orders = orders,
+            });
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteOrder([FromQuery] DeleteOrderRequest request)
+        {
+            var order = await _orderService.GetByIdAsync(request.OrdersId);
+            if (order == null)
+            {
+                return NotFound(new
+                {
+                    message = "Order not found"
+                });
+            }
+            await _orderService.DeleteAsync(order);
+            return Ok(new
+            {
+                message = "Order deleted successfully"
+            });
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateOrder([FromBody] UpdateOrderRequest request)
+        {
+            var order = await _orderService.GetByIdAsync(request.OrdersId);
+            if (order == null)
+            {
+                return NotFound(new
+                {
+                    message = "Order not found"
+                });
+            }            
+            order.Status = request.Status;
+            order.ClientId = request.ClientId;
+            order.Descount = request.Descount;
+            order.Increase = request.Increase;
+            order.Items = (ICollection<Items>)request.Items;
+            await _orderService.UpdateAsync(order);
+            return Ok(new
+            {
+                message = "Order updated successfully"
             });
         }
     }
