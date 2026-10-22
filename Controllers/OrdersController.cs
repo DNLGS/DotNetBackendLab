@@ -1,5 +1,4 @@
 using DotNetFoundations.DTOs.Orders.Requests;
-using DotNetFoundations.Models;
 using DotNetFoundations.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -55,20 +54,7 @@ namespace DotNetFoundations.Controllers
         [HttpPut]
         public async Task<IActionResult> UpdateOrder([FromBody] UpdateOrderRequest request)
         {
-            var order = await _orderService.GetByIdAsync(request.OrdersId);
-            if (order == null)
-            {
-                return NotFound(new
-                {
-                    message = "Order not found"
-                });
-            }            
-            order.Status = request.Status;
-            order.ClientId = request.ClientId;
-            order.Descount = request.Descount;
-            order.Increase = request.Increase;
-            order.Items = (ICollection<Items>)request.Items;
-            await _orderService.UpdateAsync(order);
+            await _orderService.UpdateAsync(request);
             return Ok(new
             {
                 message = "Order updated successfully"

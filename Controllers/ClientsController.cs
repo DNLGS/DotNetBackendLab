@@ -56,18 +56,7 @@ namespace DotNetFoundations.Controllers
         [HttpPut]
         public async Task<IActionResult> UpdateClient([FromBody] UpdateClientRequest request)
         {
-            var client = await _clientsService.GetByIdAsync(request.ClientsId);
-            if (client == null)
-            {
-                return NotFound(new
-                {
-                    message = "Client not found"
-                });
-            }
-            client.Name = request.Name ?? client.Name;
-            client.Email = request.Email ?? client.Email;
-            client.Phone = request.Phone ?? client.Phone;
-            await _clientsService.UpdateAsync(client);
+            await _clientsService.UpdateAsync(request);
             return Ok(new
             {
                 message = "Client updated successfully"

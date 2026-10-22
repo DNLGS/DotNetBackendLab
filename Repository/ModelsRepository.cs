@@ -1,5 +1,5 @@
 ﻿using DotNetFoundations.Database;
-using DotNetFoundations.Filters;
+using DotNetFoundations.DTOs.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DotNetFoundations.Repository
@@ -26,7 +26,7 @@ namespace DotNetFoundations.Repository
             return query;
         }
 
-        public async Task<List<T>>? GetByFilter<T>(BaseFilter filter) where T : class
+        public async Task<List<T>>? GetByFilter<T>(QueryRequest filter) where T : class
         {
             var query = GetQuery<T>();
             return await query.ToListAsync<T>();

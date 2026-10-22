@@ -1,6 +1,6 @@
 using DotNetFoundations.DTOs.Products.Requests;
 using DotNetFoundations.DTOs.Products.Responses;
-using DotNetFoundations.Filters;
+using DotNetFoundations.DTOs.Common;
 using DotNetFoundations.Models;
 using DotNetFoundations.Repository;
 
@@ -8,6 +8,26 @@ namespace DotNetFoundations.Services
 {
     public class ProductsService : BaseModelService<Products>
     {
+        public override Products CreateObjectByDTO<Dto>(Dto dto)
+        {
+            ValidateDto(dto);
+            return dto switch
+            {
+                CreateProductRequest create => new Products
+                {
+                    Name = create.Name,
+                    SuggestedPrice = create.SuggestedPrice
+                },
+                UpdateProductRequest update => new Products
+                {
+                    ProductsId = update.ProductsId,
+                    Name = update.Name,
+                    SuggestedPrice = update.SuggestedPrice
+                },
+                _ => throw new ArgumentException("DTO type not supported.", nameof(dto))
+            };
+        }
+
         public ProductsService(
             ModelsRepository repository,
             DatabaseService databaseService)
@@ -17,26 +37,23 @@ namespace DotNetFoundations.Services
 
         public async Task CreateAsync(CreateProductRequest request)
         {
-            await AddAsync(new Products
-            {
-                Name = request.Name,
-                SuggestedPrice = request.SuggestedPrice
-            });
+            await AddAsync(CreateObjectByDTO(request));
+        }
+
+        public async Task<int> UpdateAsync(UpdateProductRequest request)
+        {
+            var changes = CreateObjectByDTO(request);
+            var product = await GetByIdAsync(changes.ProductsId)
+                ?? throw new KeyNotFoundException("Product not found");
+
+            product.Name = changes.Name;
+            product.SuggestedPrice = changes.SuggestedPrice;
+            return await base.UpdateAsync(product);
         }
 
         public async Task<List<ProductResponse>> QueryAsync(QueryProductRequest request)
         {
-            var filter = new ProductFilter
-            {
-                Page = request.Page,
-                PageSize = request.PageSize,
-                OrderBy = request.OrderBy,
-                Descending = request.Descending,
-                Name = request.Name,
-                NameContains = request.NameContains,
-                MinSuggestedPrice = request.MinSuggestedPrice
-            };
-            var entities = await GetByFilterAsync(filter);
+            var entities = await GetByFilterAsync(request);
             return entities.Select(ToResponse).ToList();
         }
 
@@ -51,9 +68,9 @@ namespace DotNetFoundations.Services
             };
         }
 
-        public override IQueryable<Products> ApplyQueryOptions(IQueryable<Products> query, BaseFilter filter)
+        public override IQueryable<Products> ApplyQueryOptions(IQueryable<Products> query, QueryRequest filter)
         {
-            if (filter is ProductFilter productsFilter)
+            if (filter is QueryProductRequest productsFilter)
             {
                 if (!string.IsNullOrEmpty(productsFilter.Name))
                 {

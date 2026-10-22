@@ -1,11 +1,20 @@
-using DotNetFoundations.Filters;
+using DotNetFoundations.DTOs.Common;
+using System.ComponentModel.DataAnnotations;
 using DotNetFoundations.Repository;
 using Microsoft.EntityFrameworkCore;
 
 namespace DotNetFoundations.Services
 {
-    public class BaseModelService<T> where T : class
+    public abstract class BaseModelService<T>
+            where T : class
     {
+        public abstract T CreateObjectByDTO<Dto>(Dto dto);
+
+        protected static void ValidateDto(object? dto)
+        {
+            ArgumentNullException.ThrowIfNull(dto);
+            Validator.ValidateObject(dto, new ValidationContext(dto), validateAllProperties: true);
+        }
         private readonly ModelsRepository _repo;
         private readonly DatabaseService _databaseService;
         public BaseModelService(
@@ -17,7 +26,7 @@ namespace DotNetFoundations.Services
         }
 
         public virtual IQueryable<T> ApplyQueryOptions(
-               IQueryable<T> query,BaseFilter filter)
+               IQueryable<T> query,QueryRequest filter)
         {
             var entityType = _databaseService.Context.Model.FindEntityType(typeof(T))
                 ?? throw new InvalidOperationException(
@@ -67,7 +76,7 @@ namespace DotNetFoundations.Services
             return _repo.GetQuery<T>();
         }
 
-        public async Task<List<T>> GetByFilterAsync(BaseFilter filter)
+        public async Task<List<T>> GetByFilterAsync(QueryRequest filter)
         {
             ArgumentNullException.ThrowIfNull(filter);
             var query = GetQuery();            

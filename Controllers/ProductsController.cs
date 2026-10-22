@@ -58,17 +58,7 @@ namespace DotNetFoundations.Controllers
         [HttpPut]
         public async Task<IActionResult> UpdateProduct([FromBody] UpdateProductRequest request)
         {
-            var prod = await _productsService.GetByIdAsync(request.ProductsId);
-            if (prod == null)
-            {
-                return NotFound(new
-                {
-                    message = "Product not found"
-                });
-            }
-            prod.Name = request.Name;
-            prod.SuggestedPrice = request.SuggestedPrice;
-            await _productsService.UpdateAsync(prod);
+            await _productsService.UpdateAsync(request);
             return Ok(new
             {
                 message = "Product updated successfully"

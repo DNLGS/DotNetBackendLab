@@ -11,9 +11,11 @@ Os controllers recebem DTOs de `DTOs/<entidade>/Requests` e os serviços retorna
 | Pedidos | CreateOrderRequest | QueryOrderRequest | UpdateOrderRequest | DeleteOrderRequest | OrderResponse |
 | Itens | CreateItemRequest | QueryItemRequest | UpdateItemRequest | DeleteItemRequest | ItemResponse |
 
-Continuam disponíveis apenas POST e GET em `/api/Clients`, `/api/Products` e `/api/Orders`. Itens são enviados dentro de pedidos; não existe controller de itens. Atualização, exclusão e consulta independente de itens possuem somente contratos, sem novas rotas ou implementação de operações.
+Estão disponíveis POST, GET, PUT e DELETE em `/api/Clients`, `/api/Products` e `/api/Orders`. Itens são enviados dentro de pedidos; não existe controller de itens nem operação HTTP independente para eles.
 
-Atualização representa substituição completa dos campos editáveis: não é PATCH. Contém os campos de criação e o identificador obrigatório (`clientsId`, `productsId`, `ordersId` ou `itemsId`). Em UpdateOrderRequest, cada item usa UpdateItemRequest e informa `itemsId`. Exclusão contém somente o identificador obrigatório. Esses contratos ainda não podem ser usados por HTTP.
+Produtos e pedidos exigem todos os campos obrigatórios do DTO de atualização, incluindo seu identificador. Clientes preservam os valores atuais dos campos omitidos ou nulos; nome informado em branco é inválido. Em UpdateOrderRequest, a lista de itens é obrigatória e substitui a composição atual: cada UpdateItemRequest informa um itemsId existente no mesmo pedido, sem duplicados; itens omitidos são excluídos. IDs e datas de criação dos registros mantidos são preservados. Para incluir novos itens, o contrato de atualização precisará ser ampliado. Exclusão recebe somente o identificador obrigatório.
+
+CreateObjectByDTO é síncrono nos quatro services: valida as anotações dos DTOs e converte criação e atualização para entidades. Itens aninhados são validados individualmente, incluindo overflow do produto quantidade × preço. Criação e atualização de pedidos consultam cliente e produtos com await nos métodos assíncronos antes da persistência; ambas recalculam e validam os totais. DTO nulo ou não suportado é rejeitado.
 
 ## Campos de criação
 
@@ -77,7 +79,7 @@ As criações continuam retornando HTTP 200 e somente a mensagem existente:
 
 ## Consultas e respostas
 
-Os três DTOs de consulta usados pelos GETs são convertidos para os filtros internos existentes. Todos incluem page (padrão 1), pageSize (padrão 20), orderBy (nome de propriedade persistida) e descending (padrão false). Mantém-se a normalização de page para no mínimo 1 e pageSize para o intervalo 1–100.
+Os três DTOs de consulta usados pelos GETs são aplicados diretamente pelos services, como QueryRequest, e as entidades resultantes são convertidas em DTOs de resposta. Todos incluem page (padrão 1), pageSize (padrão 20), orderBy (nome de propriedade persistida) e descending (padrão false). Mantém-se a normalização de page para no mínimo 1 e pageSize para o intervalo 1–100.
 
 | Consulta | Filtros específicos opcionais |
 | --- | --- |
@@ -105,4 +107,6 @@ A migração `20261021180000_DecimalValues` converte seis colunas existentes de 
 
 A migração foi preparada manualmente e não foi aplicada. Antes de usar este modelo com o banco, validar a conversão em uma cópia isolada: precisão dos dados antigos, valores especiais como NaN/Infinity e valores fora do limite de decimal. Reverter para double pode perder precisão. A nova aplicação depende do alinhamento dessas colunas com o modelo decimal.
 
-Foi feita apenas revisão estática. Compilação, testes e chamadas HTTP não foram executados. Permanecem para validação autorizada: criação e consulta das três entidades; pedido com múltiplos itens e produtos repetidos; lista vazia; dados inválidos e itens nulos; cliente/produto inexistentes; overflow; paginação e ordenação; aplicação/reversão da migração em banco isolado.
+Em 22/10/2026, a solução compilou com .NET SDK 10.0.401, usando dotnet build DotNetFoundations.slnx --no-restore --nologo: zero erros e zero avisos. Não foram criados nem executados testes, conforme solicitado; não houve chamadas HTTP nem operações no banco.
+
+Os fluxos acima exigem validação em execução: criação, atualização e consulta das três entidades; pedido com múltiplos itens e produtos repetidos; lista vazia; dados inválidos e itens nulos; cliente/produto inexistentes; overflow; IDs de itens duplicados ou de outro pedido; remoção de itens omitidos; paginação e ordenação; aplicação/reversão da migração em banco isolado. Compilação não comprova esses cenários nem o alinhamento do banco com o modelo.
