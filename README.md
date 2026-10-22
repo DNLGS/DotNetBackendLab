@@ -37,4 +37,6 @@ Projeto em evolução: os tópicos acima representam estudos em andamento.
 
 ## DTOs e contratos
 
-Os DTOs estão separados por entidade e operação. Consulte [os contratos e exemplos](docs/DTOs.md) para criação, filtros, respostas e os contratos preparados de atualização e exclusão. O valor bruto dos novos pedidos é calculado no serviço a partir dos itens. A migração de valores para decimal está preparada, sem aplicação ao banco.
+Os DTOs estão separados por entidade e operação. Consulte [os contratos e exemplos](docs/DTOs.md) para criação, filtros, respostas, atualização e exclusão. O valor bruto dos pedidos é calculado no serviço a partir dos itens. PUT e DELETE exigem a versão recebida no GET; conflitos retornam 409. O filtro de data usa dias UTC.
+
+As migrações de valores para decimal e de proteção dos relacionamentos estão preparadas. A nova API exige aplicar `20261022120000_ProtectOrderIntegrity`, incluindo as migrações anteriores pendentes, antes do uso. Clientes/produtos vinculados têm exclusão bloqueada; excluir um pedido remove seus itens. Não houve aplicação de migrações nem validação em execução nesta alteração. Autenticação permanece como próxima etapa.

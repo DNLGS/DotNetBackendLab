@@ -1,4 +1,5 @@
 using DotNetFoundations.DTOs.Common;
+using DotNetFoundations.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using DotNetFoundations.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,9 @@ namespace DotNetFoundations.Services
                 ?? throw new ArgumentException(
                     $"Propriedade de ordenação inválida: {orderBy}");
 
+            if (property.IsConcurrencyToken)
+                throw new ArgumentException("O token de versão não pode ser usado na ordenação.");
+
             var ordered = filter.Descending
                 ? query.OrderByDescending(
                     e => EF.Property<object>(e, property.Name))
@@ -65,9 +69,12 @@ namespace DotNetFoundations.Services
 
             int page = Math.Max(1, filter.Page);
             int pageSize = Math.Clamp(filter.PageSize, 1, 100);
+            long offset = (long)(page - 1) * pageSize;
+            if (offset > int.MaxValue)
+                throw new ValidationException("A página informada excede o limite de paginação.");
 
             return ordered
-                .Skip((page - 1) * pageSize)
+                .Skip((int)offset)
                 .Take(pageSize);
         }
 
@@ -84,23 +91,22 @@ namespace DotNetFoundations.Services
             return await query.ToListAsync<T>();
         }
 
+        public Task<int> AddAsync<TDto>(TDto dto)
+        {
+            return AddAsync(CreateObjectByDTO(dto));
+        }
+
+        protected virtual Task PrepareAddAsync(T entity)
+        {
+            return Task.CompletedTask;
+        }
+
         public virtual async Task<int> AddAsync(T entity)
         {
             ArgumentNullException.ThrowIfNull(entity);
-            try
-            {
-                _repo.Add<T>(entity);
-                return await _databaseService.SaveChangesAsync();
-
-            }
-            catch (Exception)
-            {
-                if (_databaseService.HasActiveTransaction)
-                {
-                    await _databaseService.RollbackTransactionAsync();
-                }
-                throw;
-            }
+            await PrepareAddAsync(entity);
+            _repo.Add(entity);
+            return await _databaseService.SaveChangesAsync();
         }
 
         public void ValidatePrimaryKeys(T entity)
@@ -138,43 +144,52 @@ namespace DotNetFoundations.Services
             }
         }
 
-        public virtual async Task<int> UpdateAsync(T entity)
+        public async Task<int> UpdateAsync<TDto>(TDto dto) where TDto : IVersionedRequest
         {
-            ArgumentNullException.ThrowIfNull(entity);
-            ValidatePrimaryKeys(entity);
-            try
-            {
-                _repo.Update<T>(entity);
-                return await _databaseService.SaveChangesAsync();
+            var changes = CreateObjectByDTO(dto);
+            ValidatePrimaryKeys(changes);
 
-            }
-            catch (Exception)
-            {
-                if (_databaseService.HasActiveTransaction)
-                {
-                    await _databaseService.RollbackTransactionAsync();
-                }
-                throw;
-            }
+            var entry = _databaseService.Context.Entry(changes);
+            var primaryKey = entry.Metadata.FindPrimaryKey()
+                ?? throw new InvalidOperationException("Entidade sem chave primária.");
+            var keyValues = primaryKey.Properties
+                .Select(key => entry.Property(key.Name).CurrentValue!)
+                .ToArray();
+
+            var entity = await GetByIdAsync(keyValues)
+                ?? throw new KeyNotFoundException($"{typeof(T).Name} não encontrado.");
+
+            ValidateVersion(entity, dto.Version);
+            await PrepareUpdateAsync(entity, changes);
+            _repo.ApplyChanges(entity, dto);
+            return await _databaseService.SaveChangesAsync();
         }
 
-        public virtual async Task<int> DeleteAsync(T entity)
+        protected virtual Task PrepareUpdateAsync(T entity, T changes)
+        {
+            return Task.CompletedTask;
+        }
+
+        private void ValidateVersion(T entity, uint version)
+        {
+            if (version == 0)
+                throw new ValidationException("Informe a versão recebida na consulta do registro.");
+
+            var property = _databaseService.Context.Entry(entity)
+                .Property<uint>(nameof(IVersionedRequest.Version));
+            if (property.CurrentValue != version)
+                throw new DbUpdateConcurrencyException("O registro foi alterado. Consulte novamente antes de salvar ou excluir.");
+
+            property.OriginalValue = version;
+        }
+
+        public virtual async Task<int> DeleteAsync(T entity, uint version)
         {
             ArgumentNullException.ThrowIfNull(entity);
             ValidatePrimaryKeys(entity);
-            try
-            {
-                _repo.Delete<T>(entity);
-                return await _databaseService.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-                if (_databaseService.HasActiveTransaction)
-                {
-                    await _databaseService.RollbackTransactionAsync();
-                }
-                throw;
-            }
+            ValidateVersion(entity, version);
+            _repo.Delete<T>(entity);
+            return await _databaseService.SaveChangesAsync();
         }
 
         public virtual async Task<T?> GetByIdAsync(params object[] id)

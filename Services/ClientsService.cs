@@ -41,35 +41,12 @@ namespace DotNetFoundations.Services
         {
         }
 
-        public async Task CreateAsync(CreateClientRequest request)
-        {
-            await AddAsync(CreateObjectByDTO(request));
-        }
-
-        public async Task<int> UpdateAsync(UpdateClientRequest request)
-        {
-            var changes = CreateObjectByDTO(request);
-            var client = await GetByIdAsync(changes.ClientsId)
-                ?? throw new KeyNotFoundException("Client not found");
-
-            if (request.Name is not null)
-                client.Name = changes.Name;
-            client.Email = changes.Email ?? client.Email;
-            client.Phone = changes.Phone ?? client.Phone;
-            return await base.UpdateAsync(client);
-        }
-
-        public async Task<List<ClientResponse>> QueryAsync(QueryClientRequest request)
-        {
-            var entities = await GetByFilterAsync(request);
-            return entities.Select(ToResponse).ToList();
-        }
-
         internal static ClientResponse ToResponse(Clients entity)
         {
             return new ClientResponse
             {
                 ClientsId = entity.ClientsId,
+                Version = entity.Version,
                 Name = entity.Name,
                 Email = entity.Email,
                 Phone = entity.Phone,

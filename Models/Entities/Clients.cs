@@ -3,6 +3,7 @@ namespace DotNetFoundations.Models;
 public class Clients
 {
     public Guid ClientsId { get; set; } = Guid.NewGuid();
+    public uint Version { get; set; }
     public required string Name { get; set; }
     public string? Email { get; set; }
     public string? Phone { get; set; }

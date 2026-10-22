@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace DotNetFoundations.Middlewares
 {
@@ -50,6 +51,9 @@ namespace DotNetFoundations.Middlewares
                     DbUpdateConcurrencyException =>
                         (409, "Conflito de concorrência"),
 
+                    DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation } } =>
+                        (409, "Conflito de relacionamento"),
+
                     DbUpdateException =>
                         (500, "Falha ao salvar os dados"),
 
@@ -68,9 +72,15 @@ namespace DotNetFoundations.Middlewares
                 {
                     Status = status,
                     Title = title,
-                    Detail = status >= 500
-                        ? "Ocorreu um erro interno."
-                        : ex.Message,
+                    Detail = ex switch
+                    {
+                        DbUpdateConcurrencyException =>
+                            "O registro foi alterado ou excluído. Consulte novamente antes de salvar ou excluir.",
+                        DbUpdateException when status == 409 =>
+                            "O registro possui vínculos ou uma referência deixou de existir. Consulte os dados antes de tentar novamente.",
+                        _ when status >= 500 => "Ocorreu um erro interno.",
+                        _ => ex.Message
+                    },
                     Instance = context.Request.Path
                 };
 

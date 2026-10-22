@@ -19,7 +19,7 @@ namespace DotNetFoundations.Controllers
         public async Task<IActionResult> CreateProduct(
             [FromBody] CreateProductRequest product)
         {
-            await _productsService.CreateAsync(product);
+            await _productsService.AddAsync(product);
 
             return Ok(new
             {
@@ -30,7 +30,8 @@ namespace DotNetFoundations.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProductsFilter([FromQuery] QueryProductRequest filter)
         {
-            var products = await _productsService.QueryAsync(filter);
+            var entities = await _productsService.GetByFilterAsync(filter);
+            var products = entities.Select(ProductsService.ToResponse).ToList();
             return Ok(new {
                 products = products,
             });
@@ -48,7 +49,7 @@ namespace DotNetFoundations.Controllers
                 });
             }
 
-            await _productsService.DeleteAsync(prod);
+            await _productsService.DeleteAsync(prod, request.Version);
             return Ok(new
             {
                 message = "Product deleted successfully"

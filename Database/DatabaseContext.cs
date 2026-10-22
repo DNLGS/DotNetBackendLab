@@ -22,23 +22,27 @@ namespace DotNetFoundations.Database
             modelBuilder.Entity<Orders>().HasKey(order => order.OrdersId);
             modelBuilder.Entity<Items>().HasKey(item => item.ItemsId);
 
+            modelBuilder.Entity<Clients>().Property(client => client.Version).IsRowVersion();
+            modelBuilder.Entity<Products>().Property(product => product.Version).IsRowVersion();
+            modelBuilder.Entity<Orders>().Property(order => order.Version).IsRowVersion();
+
             modelBuilder.Entity<Orders>()
                 .HasOne(order => order.Client)
                 .WithMany(client => client.Orders)
                 .HasForeignKey(order => order.ClientId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Orders>()
                 .HasMany(order => order.Items)
                 .WithOne()
                 .HasForeignKey(item => item.OrdersId)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Items>()
                 .HasOne(item => item.Product)
                 .WithMany()
                 .HasForeignKey(item => item.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

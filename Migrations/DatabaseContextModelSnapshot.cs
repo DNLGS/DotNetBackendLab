@@ -41,6 +41,12 @@ namespace DotNetFoundations.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("ClientsId");
 
                     b.ToTable("Clients");
@@ -100,6 +106,12 @@ namespace DotNetFoundations.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("OrdersId");
 
                     b.HasIndex("ClientId");
@@ -123,6 +135,12 @@ namespace DotNetFoundations.Migrations
                     b.Property<decimal>("SuggestedPrice")
                         .HasColumnType("numeric");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("ProductsId");
 
                     b.ToTable("Products");
@@ -132,12 +150,13 @@ namespace DotNetFoundations.Migrations
                 {
                     b.HasOne("DotNetFoundations.Models.Orders", null)
                         .WithMany("Items")
-                        .HasForeignKey("OrdersId");
+                        .HasForeignKey("OrdersId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("DotNetFoundations.Models.Products", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Product");
@@ -148,7 +167,7 @@ namespace DotNetFoundations.Migrations
                     b.HasOne("DotNetFoundations.Models.Clients", "Client")
                         .WithMany("Orders")
                         .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Client");

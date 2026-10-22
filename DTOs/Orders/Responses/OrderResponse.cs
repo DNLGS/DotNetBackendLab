@@ -7,6 +7,7 @@ namespace DotNetFoundations.DTOs.Orders.Responses;
 public class OrderResponse
 {
     public Guid OrdersId { get; init; }
+    public uint Version { get; init; }
     public Guid ClientId { get; init; }
     public ClientResponse? Client { get; init; }
     public required List<ItemResponse> Items { get; init; }

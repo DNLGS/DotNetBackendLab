@@ -35,33 +35,12 @@ namespace DotNetFoundations.Services
         {
         }
 
-        public async Task CreateAsync(CreateProductRequest request)
-        {
-            await AddAsync(CreateObjectByDTO(request));
-        }
-
-        public async Task<int> UpdateAsync(UpdateProductRequest request)
-        {
-            var changes = CreateObjectByDTO(request);
-            var product = await GetByIdAsync(changes.ProductsId)
-                ?? throw new KeyNotFoundException("Product not found");
-
-            product.Name = changes.Name;
-            product.SuggestedPrice = changes.SuggestedPrice;
-            return await base.UpdateAsync(product);
-        }
-
-        public async Task<List<ProductResponse>> QueryAsync(QueryProductRequest request)
-        {
-            var entities = await GetByFilterAsync(request);
-            return entities.Select(ToResponse).ToList();
-        }
-
         internal static ProductResponse ToResponse(Products entity)
         {
             return new ProductResponse
             {
                 ProductsId = entity.ProductsId,
+                Version = entity.Version,
                 Name = entity.Name,
                 SuggestedPrice = entity.SuggestedPrice,
                 CreatedAt = entity.CreatedAt

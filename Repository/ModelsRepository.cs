@@ -1,5 +1,4 @@
 ﻿using DotNetFoundations.Database;
-using DotNetFoundations.DTOs.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DotNetFoundations.Repository
@@ -11,7 +10,7 @@ namespace DotNetFoundations.Repository
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
         }
-        
+
         private void ValidateEntity<T>(T entity) where T : class
         {
             ArgumentNullException.ThrowIfNull(entity);
@@ -26,22 +25,28 @@ namespace DotNetFoundations.Repository
             return query;
         }
 
-        public async Task<List<T>>? GetByFilter<T>(QueryRequest filter) where T : class
-        {
-            var query = GetQuery<T>();
-            return await query.ToListAsync<T>();
-        }
-
         public void Add<T>(T entity) where T : class
         {
             ValidateEntity(entity);
             _db.Set<T>().Add(entity);
         }
 
-        public void Update<T>(T entity) where T : class
+        public void ApplyChanges<T, TDto>(T entity, TDto dto) where T : class
         {
             ValidateEntity(entity);
-            _db.Set<T>().Update(entity);
+            ArgumentNullException.ThrowIfNull(dto);
+
+            var entry = _db.Entry(entity);
+            var values = entry.CurrentValues.Clone();
+            values.SetValues(dto);
+
+            foreach (var property in entry.Properties)
+            {
+                // Campos nulos preservam o valor atual, como na atualização parcial de clientes.
+                if (!property.Metadata.IsPrimaryKey() && !property.Metadata.IsConcurrencyToken &&
+                    values[property.Metadata.Name] is { } value)
+                    property.CurrentValue = value;
+            }
         }
 
         public void Delete<T>(T entity) where T : class

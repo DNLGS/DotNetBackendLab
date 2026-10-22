@@ -17,7 +17,7 @@ namespace DotNetFoundations.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateClient([FromBody] CreateClientRequest client)
         {
-            await _clientsService.CreateAsync(client);
+            await _clientsService.AddAsync(client);
             return Ok(new
             {
                 message = "Client created successfully",
@@ -27,7 +27,8 @@ namespace DotNetFoundations.Controllers
         [HttpGet]
         public async Task<IActionResult> GetClientsFilter([FromQuery] QueryClientRequest filter)
         {
-            var clients = await _clientsService.QueryAsync(filter);
+            var entities = await _clientsService.GetByFilterAsync(filter);
+            var clients = entities.Select(ClientsService.ToResponse).ToList();
             return Ok(new
             {
                 clients = clients,
@@ -46,7 +47,7 @@ namespace DotNetFoundations.Controllers
                 });
             }
 
-            await _clientsService.DeleteAsync(client);
+            await _clientsService.DeleteAsync(client, request.Version);
             return Ok(new
             {
                 message = "Client deleted successfully"

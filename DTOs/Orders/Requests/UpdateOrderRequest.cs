@@ -2,13 +2,16 @@ using System.ComponentModel.DataAnnotations;
 using DotNetFoundations.DTOs.Validation;
 using DotNetFoundations.Enums;
 using DotNetFoundations.DTOs.Items.Requests;
+using DotNetFoundations.Interfaces;
 
 namespace DotNetFoundations.DTOs.Orders.Requests;
 
-public class UpdateOrderRequest
+public class UpdateOrderRequest : IVersionedRequest
 {
     [NotEmptyGuid]
     public required Guid OrdersId { get; set; }
+    [Range(typeof(uint), "1", "4294967295", ParseLimitsInInvariantCulture = true)]
+    public required uint Version { get; set; }
     [NotEmptyGuid]
     public required Guid ClientId { get; set; }
     [EnumDataType(typeof(OrderStatus))]

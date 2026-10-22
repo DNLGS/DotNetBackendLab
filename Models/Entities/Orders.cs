@@ -6,6 +6,7 @@ namespace DotNetFoundations.Models;
 public class Orders
 {
     public Guid OrdersId { get; set; } = Guid.NewGuid();
+    public uint Version { get; set; }
     public required Guid ClientId { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public decimal Descount { get; set; }

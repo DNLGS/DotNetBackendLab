@@ -68,11 +68,9 @@ namespace DotNetFoundations.Services
             _databaseService = databaseService;
         }
 
-        public async Task CreateAsync(CreateOrderRequest request)
+        protected override Task PrepareAddAsync(Orders order)
         {
-            var order = CreateObjectByDTO(request);
-            await ValidateReferencesAsync(order);
-            await AddAsync(order);
+            return ValidateReferencesAsync(order);
         }
 
         private async Task ValidateReferencesAsync(Orders order)
@@ -88,13 +86,10 @@ namespace DotNetFoundations.Services
                 throw new ArgumentException("Um ou mais produtos informados não existem.");
         }
 
-        public async Task<int> UpdateAsync(UpdateOrderRequest request)
+        protected override async Task PrepareUpdateAsync(Orders order, Orders changes)
         {
-            var changes = CreateObjectByDTO(request);
-            var order = await _databaseService.Context.Orders
-                .Include(entity => entity.Items)
-                .SingleOrDefaultAsync(entity => entity.OrdersId == changes.OrdersId)
-                ?? throw new KeyNotFoundException("Order not found");
+            await _databaseService.Context.Entry(order)
+                .Collection(entity => entity.Items).LoadAsync();
 
             var existingItems = order.Items.ToDictionary(item => item.ItemsId);
             if (changes.Items.Any(item => !existingItems.ContainsKey(item.ItemsId)))
@@ -102,15 +97,13 @@ namespace DotNetFoundations.Services
 
             await ValidateReferencesAsync(changes);
 
-            order.ClientId = changes.ClientId;
-            order.Status = changes.Status;
-            order.Descount = changes.Descount;
-            order.Increase = changes.Increase;
             order.GrossValue = changes.GrossValue;
+            // Alterar somente itens também precisa renovar a versão do pedido.
+            _databaseService.Context.Entry(order).Property(entity => entity.GrossValue).IsModified = true;
 
             var requestedIds = changes.Items.Select(item => item.ItemsId).ToHashSet();
             var removedItems = order.Items.Where(item => !requestedIds.Contains(item.ItemsId)).ToList();
-            // O relacionamento usa ClientSetNull; remover explicitamente evita deixar itens órfãos.
+            // A FK é opcional; itens omitidos devem ser excluídos, não desvinculados.
             _databaseService.Context.Items.RemoveRange(removedItems);
             foreach (var item in removedItems)
                 order.Items.Remove(item);
@@ -122,14 +115,6 @@ namespace DotNetFoundations.Services
                 existing.Quantity = item.Quantity;
                 existing.UnitPrice = item.UnitPrice;
             }
-
-            return await base.UpdateAsync(order);
-        }
-
-        public async Task<List<OrderResponse>> QueryAsync(QueryOrderRequest request)
-        {
-            var entities = await GetByFilterAsync(request);
-            return entities.Select(ToResponse).ToList();
         }
 
         internal static OrderResponse ToResponse(Orders entity)
@@ -137,6 +122,7 @@ namespace DotNetFoundations.Services
             return new OrderResponse
             {
                 OrdersId = entity.OrdersId,
+                Version = entity.Version,
                 ClientId = entity.ClientId,
                 Status = entity.Status,
                 Descount = entity.Descount,
@@ -188,7 +174,7 @@ namespace DotNetFoundations.Services
 
                 if (orderFilter.CreatedAt.HasValue)
                 {
-                    var date = orderFilter.CreatedAt.Value.Date;
+                    var date = DateTime.SpecifyKind(orderFilter.CreatedAt.Value.Date, DateTimeKind.Utc);
                     var nextDate = date.AddDays(1);
 
                     query = query.Where(p =>

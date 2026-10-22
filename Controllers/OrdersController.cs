@@ -17,7 +17,7 @@ namespace DotNetFoundations.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest order)
         {
-            await _orderService.CreateAsync(order);
+            await _orderService.AddAsync(order);
             return Ok(new {
                     message = "Order created successfully",
             });
@@ -26,7 +26,8 @@ namespace DotNetFoundations.Controllers
         [HttpGet]
         public async Task<IActionResult> GetOrdersFilter([FromQuery] QueryOrderRequest filter)
         {
-            var orders = await _orderService.QueryAsync(filter);
+            var entities = await _orderService.GetByFilterAsync(filter);
+            var orders = entities.Select(OrderService.ToResponse).ToList();
             return Ok(new
             {
                 orders = orders,
@@ -44,7 +45,7 @@ namespace DotNetFoundations.Controllers
                     message = "Order not found"
                 });
             }
-            await _orderService.DeleteAsync(order);
+            await _orderService.DeleteAsync(order, request.Version);
             return Ok(new
             {
                 message = "Order deleted successfully"
